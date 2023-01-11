@@ -1,3 +1,30 @@
+[build-system]
+requires = ['setuptools>=61.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'albert-stubs'
+version = '0.18.11'
+authors = [
+  { name='Steven Xu', email='stevenxxiu@gmail.com' },
+]
+description = 'Stubs for Albert Launcher Python Plugins'
+readme = 'README.md'
+requires-python = '>=3.10'
+classifiers = [
+    'Programming Language :: Python :: 3',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: POSIX',
+    'Operating System :: MacOS',
+]
+
+[tool.setuptools.packages.find]
+where = ['src']
+
+[project.urls]
+'Homepage' = 'https://github.com/stevenxxiu/albert_python_stubs'
+'Bug Tracker' = 'https://github.com/stevenxxiu/albert_python_stubs/issues'
+
 [tool.black]
 target-version = ['py310']
 line-length = 120

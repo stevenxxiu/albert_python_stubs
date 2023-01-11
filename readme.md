@@ -1,8 +1,9 @@
-# PyCharm Stubs For Albert Launcher Python Plugins
+# Stubs for Albert Launcher Python Plugins
 ## Install
-To install, follow [Stubs | PyCharm Documentation](https://www.jetbrains.com/help/pycharm/stubs.html#reuse-stubs).
+To install, clone the project and run:
 
-In *Status Bar* -> *Project Interpreter* selector -> `Interpreter Settings...` -> `Python Interpreter:` dropdown -> `Show All...` -> `Show Interpreter Paths` icon -> Add a stub to the `python_stubs/` directory.
+    $ cd albert_python_stubs/
+    $ pip install .
 
 ## Development Setup
 To setup the project for development, run:
