@@ -1,5 +1,3 @@
-from typing import List
-
 def debug(obj):
     '''Log a message to stdout. Note that `debug` is effectively a NOP in release builds. Puts the passed object into
     `str()` for convenience. The messages are logged using the QLoggingCategory of the python extension and therefore
@@ -115,7 +113,7 @@ class Query:
     regularly check this flag and abort the query handling if the flag is `False` to release threads in the 
     threadpool for the next query.'''
 
-    def add(self, item: Item | List[Item]):
+    def add(self, item: Item | list[Item]):
         '''
         - Adds a single item to the query
         - Adds a list of items to the query
