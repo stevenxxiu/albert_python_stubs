@@ -110,10 +110,11 @@ class Query:
     string: str
     '''Returns the query string _without_ the trigger'''
 
-    def isValid(self):
-        '''This flag indicates if the query is valid. A query is valid until the query manager cancels it. You should
-        regularly check this flag and abort the query handling if the flag is `False` to release threads in the
-        threadpool for the next query.'''
+    isValid: bool
+    '''This flag indicates if the query is valid. A query is valid until the query manager cancels it. You should 
+    regularly check this flag and abort the query handling if the flag is `False` to release threads in the 
+    threadpool for the next query.'''
+
     def add(self, item: Item | List[Item]):
         '''
         - Adds a single item to the query
