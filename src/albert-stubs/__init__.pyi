@@ -1,120 +1,340 @@
-def debug(obj: object) -> None:
-    '''Log a message to stdout. Note that `debug` is effectively a NOP in release builds. Puts the passed object into
-    `str()` for convenience. The messages are logged using the QLoggingCategory of the python extension and therefore
-    are subject to filter rules.'''
-    pass
+'''
+Albert Python interface specification v1.0
 
-def info(obj: object) -> None:
-    '''Log a message to stdout. Note that `debug` is effectively a NOP in release builds. Puts the passed object into
-    `str()` for convenience. The messages are logged using the QLoggingCategory of the python extension and therefore
-    are subject to filter rules.'''
-    pass
+A Python plugin module is required to have the metadata described below and contain a
+class named `Plugin` which will be instantiated when the plugin is loaded.
 
-def warning(obj: object) -> None:
-    '''Log a message to stdout. Note that `debug` is effectively a NOP in release builds. Puts the passed object into
-    `str()` for convenience. The messages are logged using the QLoggingCategory of the python extension and therefore
-    are subject to filter rules.'''
-    pass
 
-def critical(obj: object) -> None:
-    '''Log a message to stdout. Note that `debug` is effectively a NOP in release builds. Puts the passed object into
-    `str()` for convenience. The messages are logged using the QLoggingCategory of the python extension and therefore
-    are subject to filter rules.'''
-    pass
+# Metadata
 
-def cacheLocation() -> str:
-    '''Returns the writable cache, config and data location of the app. E.g. on Linux *$HOME/.cache/albert/*,
-    *$HOME/.config/albert/* and *$HOME/.local/share/albert/*.'''
+Mandatory metadata variables:
 
-def configLocation() -> str:
-    '''Returns the writable cache, config and data location of the app. E.g. on Linux *$HOME/.cache/albert/*,
-    *$HOME/.config/albert/* and *$HOME/.local/share/albert/*.'''
+md_iid: str             Interface version (<major>.<minor>)
+md_version: str         Plugin version (<major>.<minor>)
+md_name: str            Human readable name
+md_description: str     A brief, imperative description. (Like "Launch apps" or "Open files")
 
-def dataLocation() -> str:
-    '''Returns the writable cache, config and data location of the app. E.g. on Linux *$HOME/.cache/albert/*,
-    *$HOME/.config/albert/* and *$HOME/.local/share/albert/*.'''
+Optional metadata variables:
 
-def setClipboardText(text: str = '') -> None:
-    pass
+md_id                                   Identifier overwrite. [a-zA-Z0-9_]. Defaults to module name.
+                                        Note `__name__` gets `albert.` prepended to avoid conflicts.
+__doc__                                 The docstring of the module is used as long description/readme of the extension.
+md_license: str                         Short form e.g. BSD-2-Clause or GPL-3.0
+md_url: str                             Browsable source, issues etc
+md_maintainers: [str|List(str)]         Active maintainer(s). Preferrably using mentionable Github usernames.
+md_bin_dependencies: [str|List(str)]    Required executable(s). Have to match the name of the executable in $PATH.
+md_lib_dependencies: [str|List(str)]    Required Python package(s). Have to match the PyPI package name.
+md_credits: [str|List(str)]             Third party credit(s) and license notes
 
-def openUrl(url: str = '') -> None:
-    pass
 
-def runDetachedProcess(cmdln: list(str) = [], workdir: str = '') -> None:
-    pass
+# The Plugin class
 
-def runTerminal(script: str = '', workdir: str = '', close_on_exit: bool = False) -> None:
-    pass
+* The plugin class is the entry point for a plugin and instantiated on plugin initialization.
+* Implement extensions by subclassing (one!) extension class provided by the built-in `albert` module.
+  Due to the differences in type systems multiple inheritance of extensions is not supported.
+  If the Plugin class inherits an extension it will be automatically registered.
+* Define an "extensions() -> List[Extension]" instance function if you want to provide multiple extensions.
+* Define initialize() and/or finalize() instance functions if needed.
+  Do not use the constructor, since PyBind11 imposes some inconvenient boilerplate on them.
+'''
 
-def sendTrayNotification(title: str = '', msg: str = '', ms: int = 10000) -> None:
-    pass
+from enum import Enum
+from typing import Any, Callable, List, Optional, Union
 
 class Action:
-    '''Represents the internal `albert::Action` class.'''
+    '''Action object for items.'''
 
-    def __init__(self, id: str, text: str, callable: object) -> None:
-        pass
+    def __init__(self, id: str, text: str, callable: Callable):
+        '''
+        Args:
+            id: The identifier of the action
+            text: The title of the action
+            callable: The callable invoked on activation
+        '''
 
-class Item:
-    '''Corresponds to the internal class `albert::StandardItem`. See the C++ documentation for more info.'''
+class AbstractItem:
+    '''The abstract item base class. Serves as result item. Represents albert::Item interface class.'''
+
+    @property
+    @abstractmethod
+    def id(self) -> str:
+        '''Per extension unique identifier. Must not be empty.'''
+    @property
+    @abstractmethod
+    def text(self) -> str:
+        '''The primary text of the item.'''
+    @property
+    @abstractmethod
+    def subtext(self) -> str:
+        '''The secondary text of the item. This text should have informative character.'''
+    @property
+    @abstractmethod
+    def icon(self) -> List[str]:
+        '''
+        Icon urls used for the icon lookup. Supported url schemes:
+        * 'xdg:<icon-name>' performs freedesktop icon theme specification lookup (linux only).
+        * 'qfip:<path>' uses QFileIconProvider to get the icon for the file.
+        * ':<path>' is a QResource path.
+        * '<path>' is interpreted as path to a local image file.
+        '''
+    @property
+    def completion(self) -> str:
+        '''
+        The completion string of the item. This string will be used to replace the
+        input line when the user hits the Tab key on an item. Note that the
+        semantics may vary depending on the context. Default empty.
+        '''
+    @property
+    def actions(self) -> List[Action]:
+        '''The actions of the item. Default empty.'''
+
+class Item(AbstractItem):
+    '''
+    Standard result item.
+    Represents albert::StandardItem.
+    See AbstractItem for more information
+    '''
 
     def __init__(
         self,
         id: str = '',
         text: str = '',
         subtext: str = '',
-        completion: str = '',
-        icon: list(str) = [],
-        actions: list(Action) = [],
-    ) -> None:
-        pass
+        completion: Optional[str] = '',
+        icon: List[str] = [],
+        actions: List[Action] = [],
+    ): ...
+
+    id: str
+    '''Per extension unique identifier. Must not be empty.'''
+
+    text: str
+    '''The primary text of the item.'''
+
+    subtext: str
+    '''The secondary text of the item. This text should have informative character.'''
+
+    completion: str
+    '''
+    The completion string of the item. This string will be used to replace the
+    input line when the user hits the Tab key on an item. Note that the
+    semantics may vary depending on the context.
+    '''
+
+    icon: List[str]
+    '''
+    Icon urls used for the icon lookup. Supported url schemes:
+    * 'xdg:<icon-name>' performs freedesktop icon theme specification lookup (linux only).
+    * 'qfip:<path>' uses QFileIconProvider to get the icon for the file.
+    * ':<path>' is a QResource path.
+    * '<path>' is interpreted as path to a local image file.
+    '''
+
+    actions: List[Action]
+    '''The actions of the item.'''
 
 class Extension:
-    '''Corresponds to the internal class `albert::Extension` which is a virtual base class for all extensions. You
-    _have to_ override the following functions in all subclasses.'''
+    '''Abstract base class for all extensions.'''
 
+    @abstractmethod
     def id(self) -> str:
-        '''***MANDATORY*** Return the extension id'''
+        '''The unique identifier of the extension.'''
+    @abstractmethod
     def name(self) -> str:
-        '''***MANDATORY*** Return the human readable extension name'''
+        '''The human readable name of the extension.'''
+    @abstractmethod
     def description(self) -> str:
-        '''***MANDATORY*** Return an imperative, brief description'''
-    def initialize(self) -> None:
-        pass
-    def finalize(self) -> None:
-        pass
+        '''Brief description of the service provided.'''
+    def cacheLocation(self) -> str:
+        '''
+        The recommended cache location for this extension.
+        Creates the directory if necessary.
+        Since iid v1.0.
+        Returns:
+            The writable cache location of the extension.
+        '''
+    def configLocation(self) -> str:
+        '''
+        The recommended config location for this extension.
+        Creates the directory if necessary.
+        Since iid v1.0.
+        Returns:
+            The writable config location of the extension.
+        '''
+    def dataLocation(self) -> str:
+        '''
+        The recommended data location for this extension.
+        Creates the directory if necessary.
+        Since iid v1.0.
+        Returns:
+            The writable data location of the extension.
+        '''
 
-class QueryHandler(Extension):
-    '''Corresponds to the internal extension class `albert::QueryHandler`. Subclass it to provide a query handling
-    extension.'''
+class FallbackHandler(Extension):
+    '''Base class for a fallback providing extensions.'''
 
-    def handleQuery(self, query: Query) -> None:
-        '''***MANDATORY***. When the user types a query, this function is called with a query object representing the
-        current query execution. See the Query section below.'''
+    @abstractmethod
+    def fallbacks(self, query: str) -> List[AbstractItem]:
+        '''Implement to handle the fallback query.'''
+
+class TriggerQuery:
+    '''Represents a triggered, exclusive query execution.'''
+
+    @property
+    def trigger(self) -> str:
+        '''The trigger that has been used to start this extension.'''
+    @property
+    def string(self) -> str:
+        '''The actual query string (without the trigger).'''
+    @property
+    def isValid(self) -> bool:
+        '''This flag indicates that this the query is still valid. Cancel query processing if it is not.'''
+    @overload
+    def add(self, item: AbstractItem):
+        '''Add a single result item.'''
+    @overload
+    def add(self, item: List[AbstractItem]):
+        '''Add a list of result items.'''
+
+class TriggerQueryHandler(Extension):
+    '''Base class for a triggered query handling extensions.'''
+
     def synopsis(self) -> str:
-        '''**Optional** Return a synopsis to display on empty queries'''
+        '''Implement to return a synopsis, displayed on empty query. Defaults to empty.'''
     def defaultTrigger(self) -> str:
-        '''**Optional** Return a default trigger overwrite. Defaults to extension id.'''
+        '''Implement to set a default trigger. Defaults to Extension::id().'''
     def allowTriggerRemap(self) -> bool:
-        '''**Optional** Return a bool indicating if the user is allowed to remap the trigger. Defaults to True.'''
+        '''Implement to set trigger remapping permissions. Defaults to false.'''
+    @abstractmethod
+    def handleTriggerQuery(self, query: TriggerQuery) -> None:
+        '''Implement to handle the triggered query.'''
 
-class Query:
-    '''The query class represents a user query and is passed to the handleQuery function when the user starts a
-    query.'''
+class GlobalQuery:
+    '''Represents a triggered, exclusive query execution.'''
 
-    trigger: str
-    '''Returns the trigger used to trigger this query'''
+    @property
+    def string(self) -> str:
+        '''The actual query string (without the trigger).'''
+    @property
+    def isValid(self) -> bool:
+        '''This flag indicates that this the query is still valid. Cancel query processing if it is not.'''
+
+class RankItem:
+    '''Result item with score for use in GlobalQueryHandler.'''
+
+    def __init__(self, item: AbstractItem, score: float): ...
+
+    item: AbstractItem
+    '''The result item.'''
+
+    score: float
+    '''The score of the item (0,1]. No checks applied for performance.'''
+
+class GlobalQueryHandler(Extension):
+    '''Base class for a global query handling extensions.'''
+
+    @abstractmethod
+    def handleGlobalQuery(self, query: GlobalQuery) -> List[RankItem]:
+        '''Implement to handle the global query.'''
+
+class QueryHandler(TriggerQueryHandler, GlobalQueryHandler):
+    '''
+    Convenience base class that combines Trigger- and GlobalQueryHandler. Implements `handleTriggerQuery`
+    by getting, sorting and adding the results of the handleGlobalQuery to the query.
+    '''
+
+    def handleTriggerQuery(self, query: TriggerQuery) -> None:
+        '''Calls `handleGlobalQuery` and sorts and adds the results to the query.'''
+
+class IndexItem:
+    '''Index item with index string for use in IndexQueryHandler.'''
+
+    def __init__(self, item: AbstractItem, string: str): ...
+
+    item: AbstractItem
+    '''The indexed item.'''
 
     string: str
-    '''Returns the query string _without_ the trigger'''
+    '''The index string used to look up this item.'''
 
-    isValid: bool
-    '''This flag indicates if the query is valid. A query is valid until the query manager cancels it. You should 
-    regularly check this flag and abort the query handling if the flag is `False` to release threads in the 
-    threadpool for the next query.'''
+class IndexQueryHandler(QueryHandler):
+    '''
+    Convenience base class that combines maintains an index and does matching and scoring for you.
+    '''
 
-    def add(self, item: Item | list[Item]) -> None:
-        '''
-        - Adds a single item to the query
-        - Adds a list of items to the query
-        '''
+    def handleGlobalQuery(self, query: GlobalQuery) -> List[RankItem]:
+        '''Handles a global query by using the internal index.'''
+    def setIndexItems(self, indexItems: List[RankItem]) -> None:
+        '''Handles a global query by using the internal index.'''
+    @abstractmethod
+    def updateIndexItems(self) -> None:
+        '''Implement to populate the index. Use `setIndexItems`.'''
+
+def debug(arg: Any) -> None:
+    '''
+    Log a message to stdout at the "debug" log level. Note that debug is
+    effectively a NOP in release builds
+    Args:
+        arg: The object to be logged.
+    '''
+
+def info(arg: Any) -> None:
+    '''
+    Log a message to stdout at the "info" log level.
+    Args:
+        arg: The object to be logged.
+    '''
+
+def warning(arg: Any) -> None:
+    '''
+    Log a message to stdout at the "warning" log level.
+    Args:
+        arg: The object to be logged.
+    '''
+
+def critical(arg: Any) -> None:
+    '''
+    Log a message to stdout at the "critical" log level.
+    Args:
+        arg: The object to be logged.
+    '''
+
+def setClipboardText(text: str = '') -> None:
+    '''
+    Set the system clipboard text.
+    Args:
+        text: The text used to set the clipboard
+    '''
+
+def openUrl(url: str = '') -> None:
+    '''
+    Open an URL using QDesktopServices::openUrl.
+    Args:
+        url: The URL to open
+    '''
+
+def runDetachedProcess(cmdln: List[str] = [], workdir: str = '') -> None:
+    '''
+    Run a detached process.
+    Args:
+        cmdln: The commandline to run in the terminal (argv)
+        workdir: The working directory used to run the terminal
+    '''
+
+def runTerminal(script: str = '', workdir: str = '', close_on_exit: bool = False) -> None:
+    '''
+    Run a script in the users shell and terminal.
+    Args:
+        script: The script to be executed.
+        workdir: The working directory used to run the process
+        close_on_exit: Close the terminal on exit. Otherwise exec $SHELL.
+    '''
+
+def sendTrayNotification(title: str = '', msg: str = '', ms: int = 10000) -> None:
+    '''
+    Send a tray notification.
+    Args:
+        title: The notification title
+        msg: The notification body
+        ms: The display time (if supported by the system)
+    '''
