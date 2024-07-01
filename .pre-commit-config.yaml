@@ -19,6 +19,7 @@ repos:
     rev: v1.9.0
     hooks:
       - id: prospector
+        additional_dependencies: [setuptools, pycodestyle==2.11.1]
   - repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:

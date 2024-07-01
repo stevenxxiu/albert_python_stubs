@@ -4,13 +4,13 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'albert-stubs'
-version = '0.22.2'
+version = '2.3'
 authors = [
   { name='Steven Xu', email='stevenxxiu@gmail.com' },
 ]
 description = 'Stubs for Albert Launcher Python Plugins'
 readme = 'README.md'
-requires-python = '>=3.10'
+requires-python = '>=3.11'
 classifiers = [
     'Programming Language :: Python :: 3',
     'License :: OSI Approved :: MIT License',
@@ -26,7 +26,7 @@ where = ['src']
 'Bug Tracker' = 'https://github.com/stevenxxiu/albert_python_stubs/issues'
 
 [tool.black]
-target-version = ['py310']
+target-version = ['py311']
 line-length = 120
 skip-string-normalization = true
 quiet = true
@@ -49,3 +49,12 @@ lines_after_imports = 2
 atomic = true
 combine_star = true
 skip = []
+
+[tool.pylint]
+disable = [
+    'invalid-name',
+    'no-member',
+    'too-few-public-methods',
+    'too-many-ancestors',
+  ]
+max-line-length = 120
